@@ -1,0 +1,55 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Logs
+*.log
+storage/logs/*
+!storage/logs/.gitkeep
+
+# Environment files
+.env
+.env.*
+!env.example
+
+# Documentation
+*.md
+docs
+
+# Tests
+**/*.test.ts
+**/*.spec.ts
+coverage
+.nyc_output
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Husky
+.husky
+
+# GitHub
+.github
+
+# Misc
+*.tgz
+*.tar.gz
+

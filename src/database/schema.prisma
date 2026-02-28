@@ -1,0 +1,314 @@
+// Database Schema
+// Node.js Boilerplate - Modular Monolith
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum UserStatus {
+  active
+  banned
+  deleted
+  suspended
+}
+
+enum CodeVerificationPurpose {
+  phone_auth
+  phone_verify
+  email_auth
+  email_verify
+  registration
+  two_factor_auth
+  mfa_auth
+}
+
+enum Platform {
+  android
+  ios
+  web
+}
+
+enum GalleryType {
+  image
+  video
+  pdf
+}
+
+enum GalleryStatus {
+  pending
+  uploaded
+  failed
+}
+
+enum MagicTokenPurpose {
+  password_reset
+  email_verification
+}
+
+enum ConfigValueType {
+  string
+  number
+  boolean
+  json
+}
+
+// ============================================================================
+// CORE TABLES
+// ============================================================================
+
+model SystemConfig {
+  id          BigInt          @id @default(autoincrement())
+  key         String          @unique @db.VarChar(255)
+  value       String          @db.Text
+  type        ConfigValueType @default(string)
+  description String?         @db.VarChar(500)
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  @@index([key])
+  @@map("system_configs")
+}
+
+model Role {
+  id               BigInt   @id @default(autoincrement())
+  name             String   @db.VarChar(255)
+  slug             String   @unique @db.VarChar(255)
+  forApp           Boolean  @default(true) @map("for_app")
+  passwordRequired Boolean  @default(false) @map("password_required")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  users      User[]
+  permission Permission?
+
+  @@map("roles")
+}
+
+model Permission {
+  id          BigInt   @id @default(autoincrement())
+  roleId      BigInt   @unique @map("role")
+  permissions Json?    @db.JsonB
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@map("permissions")
+}
+
+// ============================================================================
+// USER & AUTHENTICATION
+// ============================================================================
+
+model User {
+  id              BigInt     @id @default(autoincrement())
+  firstName       String     @map("first_name") @db.VarChar(255)
+  lastName        String     @map("last_name") @db.VarChar(255)
+  avatarId        BigInt?    @map("avatar")
+  email           String     @unique @db.VarChar(255)
+  emailVerifiedAt DateTime?  @map("email_verified_at")
+  countryCode     String     @default("1") @map("country_code") @db.VarChar(10)
+  phone           String     @db.VarChar(20)
+  phoneVerifiedAt DateTime?  @map("phone_verified_at")
+  roleId          BigInt     @default(1) @map("role")
+  latitude        Decimal?   @db.Decimal(10, 8)
+  longitude       Decimal?   @db.Decimal(11, 8)
+  mfaEnabled      Boolean    @default(false) @map("mfa_enabled")
+  mfaSecret       Json?      @map("mfa_secret") @db.JsonB
+  otpAuth         Boolean    @default(false) @map("otp_auth")
+  loginAttempts   Int        @default(0) @map("login_attempts") @db.SmallInt
+  inactiveTill    DateTime?  @map("inactive_till")
+  status          UserStatus @default(active)
+  remarks         String?    @db.VarChar(255)
+  lastLoginAt     DateTime?  @map("last_login_at")
+  verified        Boolean    @default(false)
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  role              Role               @relation(fields: [roleId], references: [id])
+  avatar            Gallery?           @relation("UserAvatar", fields: [avatarId], references: [id])
+  addresses         Address[]
+  passwords         Password[]
+  codeVerifications CodeVerification[]
+  fcmTokens         FcmToken[]
+  loginSessions     LoginSession[]
+  uploadedGallery   Gallery[]          @relation("UploadedBy")
+  magicTokens       MagicToken[]
+
+  @@unique([countryCode, phone])
+  @@index([email])
+  @@index([phone])
+  @@map("users")
+}
+
+model Password {
+  id        BigInt    @id @default(autoincrement())
+  userId    BigInt    @map("user")
+  password  String    @db.VarChar(255)
+  salt      String    @db.VarChar(255)
+  status    Boolean   @default(true)
+  expired   Boolean   @default(false)
+  expiredAt DateTime? @map("expired_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("passwords")
+}
+
+model CodeVerification {
+  id             BigInt                  @id @default(autoincrement())
+  userId         BigInt                  @map("user")
+  reference      String                  @unique @db.VarChar(255)
+  purpose        CodeVerificationPurpose @default(phone_auth)
+  phoneCode      Int?                    @map("phone_code")
+  emailCode      Int?                    @map("email_code")
+  verified       Boolean                 @default(false)
+  expired        Boolean                 @default(false)
+  expiredAt      DateTime                @map("expired_at")
+  verifiedAt     DateTime?               @map("verified_at")
+  resendAttempts Int                     @default(0) @map("resend_attempts")
+  lastResendAt   DateTime?               @map("last_resend_at")
+  createdAt      DateTime                @default(now()) @map("created_at")
+  updatedAt      DateTime                @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([reference])
+  @@map("code_verification")
+}
+
+model LoginSession {
+  id         BigInt    @id @default(autoincrement())
+  userId     BigInt    @map("user")
+  token      String    @db.Text
+  userAgent  Json?     @map("user_agent") @db.JsonB
+  ipAddress  String?   @map("ip_address") @db.Text
+  deviceName String?   @map("device_name") @db.VarChar(255)
+  identifier BigInt?
+  status     Boolean   @default(true)
+  verified   Boolean   @default(true)
+  lastUsed   DateTime? @map("last_used")
+  revokedAt  DateTime? @map("revoked_at")
+  expiresAt  DateTime  @map("expires_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id])
+  fcmToken FcmToken? @relation(fields: [identifier], references: [id])
+
+  @@index([userId])
+  @@index([token])
+  @@map("login_sessions")
+}
+
+model FcmToken {
+  id         BigInt   @id @default(autoincrement())
+  userId     BigInt   @map("user")
+  token      String   @db.VarChar(255)
+  device     Json     @db.JsonB
+  identifier String   @unique @db.VarChar(255)
+  platform   Platform @default(android)
+  lastSeenAt DateTime @map("last_seen_at")
+  status     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user          User           @relation(fields: [userId], references: [id])
+  loginSessions LoginSession[]
+
+  @@index([userId])
+  @@map("fcm_tokens")
+}
+
+model MagicToken {
+  id        BigInt            @id @default(autoincrement())
+  userId    BigInt?           @map("user")
+  token     String            @unique @db.VarChar(255)
+  purpose   MagicTokenPurpose
+  email     String            @db.VarChar(255)
+  roleId    BigInt?           @map("role")
+  metadata  Json?             @db.JsonB
+  used      Boolean           @default(false)
+  usedAt    DateTime?         @map("used_at")
+  expiresAt DateTime          @map("expires_at")
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([token])
+  @@index([email])
+  @@map("magic_tokens")
+}
+
+// ============================================================================
+// ADDRESS & LOCATION
+// ============================================================================
+
+model Address {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user")
+  isPrimary Boolean  @default(false) @map("is_primary")
+  latitude  Decimal  @db.Decimal(10, 8)
+  longitude Decimal  @db.Decimal(11, 8)
+  address   String   @db.VarChar(255)
+  street    String?  @db.VarChar(255)
+  city      String   @db.VarChar(255)
+  province  String   @db.VarChar(255)
+  country   String   @default("") @db.VarChar(10)
+  zipCode   String   @map("zip_code") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+// ============================================================================
+// GALLERY & MEDIA
+// ============================================================================
+
+model Gallery {
+  id           BigInt        @id @default(autoincrement())
+  uploadedById BigInt        @map("uploaded_by")
+  reference    String        @unique @db.VarChar(255)
+  title        String?       @db.VarChar(255)
+  description  String?       @db.VarChar(255)
+  filetype     String        @db.VarChar(100)
+  extension    String        @db.VarChar(20)
+  size         BigInt        @default(0)
+  height       Int?
+  width        Int?
+  bucket       String        @db.VarChar(100)
+  isPublic     Boolean       @default(false) @map("is_public")
+  type         GalleryType   @default(image)
+  status       GalleryStatus @default(pending)
+  path         String        @db.VarChar(500)
+  thumbnail    String?       @db.VarChar(500)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  uploadedBy User @relation("UploadedBy", fields: [uploadedById], references: [id])
+
+  userAvatars User[] @relation("UserAvatar")
+
+  @@index([uploadedById])
+  @@index([reference])
+  @@index([status])
+  @@map("gallery")
+}

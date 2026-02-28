@@ -1,0 +1,77 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "lib": [
+      "ES2020"
+    ],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": [
+        "./*"
+      ],
+      "@core/*": [
+        "./app/core/*"
+      ],
+      "@app/*": [
+        "./app/*"
+      ],
+      "@http/*": [
+        "./app/http/*"
+      ],
+      "@modules/*": [
+        "./app/http/modules/*"
+      ],
+      "@services/*": [
+        "./app/http/services/*"
+      ],
+      "@middleware/*": [
+        "./app/http/middleware/*"
+      ],
+      "@config/*": [
+        "./config/*"
+      ],
+      "@database/*": [
+        "./database/*"
+      ]
+    },
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "removeComments": true,
+    "types": [
+      "node",
+      "express"
+    ],
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "ts-node": {
+    "transpileOnly": true,
+    "files": true
+  }
+}
