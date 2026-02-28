@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+set -e
+
+# Run linting with auto-fix
+echo "📝 Fixing and checking code style..."
+npm run lint:fix || exit 1
+
+# Run linting
+echo "📝 Checking code style..."
+npm run lint || exit 1
+
+# Build application
+echo "🔨 Building application..."
+npm run build || exit 1
+
+echo "✅ All pre-commit checks passed!"
