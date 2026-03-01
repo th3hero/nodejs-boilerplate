@@ -5,6 +5,7 @@
 
 import type { Request, Response } from 'express';
 import { getHealthSnapshot } from '@services/helpers/health/health.service';
+import { captureMessage } from '@services/index';
 import environment from '@config/environment.config';
 
 export class AppController {
@@ -23,6 +24,18 @@ export class AppController {
 
         const overallStatus = health.overallStatus;
         const status = overallStatus === 'healthy' ? 200 : overallStatus === 'degraded' ? 503 : 500;
+
+        if (status >= 500) {
+            captureMessage('Health check reported service degradation', status === 500 ? 'error' : 'warning', {
+                status,
+                overallStatus,
+                checks: health.checks
+            }, {
+                module: 'app:health',
+                alertType: 'health-check',
+                overallStatus
+            });
+        }
 
         return res.status(status).json({
             success: overallStatus === 'healthy',

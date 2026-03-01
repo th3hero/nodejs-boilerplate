@@ -9,7 +9,7 @@ import http from 'http';
 import app from './app';
 import environment from '@config/environment.config';
 import { connectDatabase, disconnectDatabase, disconnectRedisClient, initContainer } from '@core/index';
-import { createLogger } from '@services/index';
+import { createLogger, captureException } from '@services/index';
 import { initSessionUpdateWorker, shutdownSessionQueue } from '@http/modules/auth';
 
 const log = createLogger('server');
@@ -91,6 +91,11 @@ if (isProduction && cluster.isPrimary) {
             // Handle uncaught exceptions
             process.on('uncaughtException', error => {
                 log.error('Uncaught exception', { error: error.message, stack: error.stack });
+                captureException(
+                    error,
+                    { type: 'uncaughtException' },
+                    { module: 'process', alertType: 'uncaught-exception' }
+                );
                 gracefulShutdown('uncaughtException');
             });
 
@@ -98,6 +103,11 @@ if (isProduction && cluster.isPrimary) {
                 log.error('Unhandled rejection', {
                     reason: reason instanceof Error ? reason.message : String(reason)
                 });
+                captureException(
+                    reason,
+                    { type: 'unhandledRejection' },
+                    { module: 'process', alertType: 'unhandled-rejection' }
+                );
             });
         } catch (error) {
             log.error('Failed to start server', {

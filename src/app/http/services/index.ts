@@ -7,4 +7,5 @@ export * from './jwt.service';
 export * from './password.service';
 export * from './encryption.service';
 export * from './logger.service';
+export * from './sentry.service';
 export * from './storage';

@@ -27,6 +27,7 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.0.0",
     "@prisma/client": "^7.0.0",
+    "@sentry/node": "^10.40.0",
     "@th3hero/request-validator": "^1.1.9",
     "bullmq": "^5.64.0",
     "cors": "^2.8.5",
