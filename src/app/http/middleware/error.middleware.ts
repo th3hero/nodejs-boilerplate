@@ -6,7 +6,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { isAppError } from '@core/errors';
 import { ERROR_CODES } from '@core/constants';
-import { createLogger } from '@services/index';
+import { createLogger, captureException } from '@services/index';
 import { getRequestId } from './request-context.middleware';
 import environment from '@config/environment.config';
 
@@ -42,6 +42,11 @@ interface ErrorResponse {
  */
 export const errorHandler = (error: Error, req: Request, res: Response, _next: NextFunction): Response => {
     const requestId = getRequestId();
+    const sentryContext = {
+        path: req.originalUrl,
+        method: req.method,
+        requestId
+    };
 
     // Log the error
     log.exception('Unhandled error', error, {
@@ -52,6 +57,15 @@ export const errorHandler = (error: Error, req: Request, res: Response, _next: N
 
     // Handle AppError (our custom errors)
     if (isAppError(error)) {
+        if (error.statusCode >= 500) {
+            captureException(error, sentryContext, {
+                module: 'http:error-middleware',
+                errorType: error.name,
+                errorCode: error.errorCode,
+                statusCode: error.statusCode
+            });
+        }
+
         const response: ErrorResponse = {
             success: false,
             message: error.message,
@@ -123,6 +137,12 @@ export const errorHandler = (error: Error, req: Request, res: Response, _next: N
     }
 
     // Default: Internal Server Error
+    captureException(error, sentryContext, {
+        module: 'http:error-middleware',
+        errorType: error.name,
+        statusCode: 500
+    });
+
     const response: ErrorResponse = {
         success: false,
         message: isDev ? error.message : 'Internal Server Error',

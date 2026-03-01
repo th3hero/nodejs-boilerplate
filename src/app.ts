@@ -25,12 +25,14 @@ import {
 
 // Routes
 import router from '@/routes';
+import { initSentry } from '@services/index';
 
 // ============================================================================
 // Application Setup
 // ============================================================================
 
 const app: Express = express();
+initSentry();
 
 // Request context (must be first - provides request ID for logging)
 app.use(requestContextMiddleware);

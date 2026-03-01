@@ -74,6 +74,10 @@ export interface Environment {
         maxSize: string;
         maxFiles: string;
     };
+    sentry: {
+        dsn: string;
+        sendDefaultPii: boolean;
+    };
     aws: {
         region: string;
         accessKeyId: string;
@@ -177,6 +181,10 @@ const environment: Environment = {
         level: process.env['LOG_LEVEL'] || (env === 'development' ? 'debug' : 'info'),
         maxSize: process.env['LOG_MAX_SIZE'] || '20m',
         maxFiles: process.env['LOG_MAX_FILES'] || '30d'
+    },
+    sentry: {
+        dsn: process.env['SENTRY_DSN'] || '',
+        sendDefaultPii: (process.env['SENTRY_SEND_DEFAULT_PII'] || 'true') === 'true'
     },
     aws: {
         region: process.env['AWS_REGION'] || 'us-east-1',
