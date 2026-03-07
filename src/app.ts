@@ -26,6 +26,7 @@ import {
 // Routes
 import router from '@/routes';
 import { initSentry } from '@services/index';
+import { registerApiDocs } from '@/docs';
 
 // ============================================================================
 // Application Setup
@@ -54,6 +55,9 @@ app.use(sanitizeMiddleware);
 
 // Static files
 app.use(express.static(path.join(__dirname, '../storage/assets/public')));
+
+// API documentation
+registerApiDocs(app);
 
 // Routes
 app.use(router);

@@ -30,9 +30,8 @@ export const setRequestContextGetter = (getter: typeof getRequestContext): void 
 // Configuration
 // ============================================================================
 
-const { isDev } = environment.basic;
 const logLevel = environment.logging.level;
-const { maxSize, maxFiles } = environment.logging;
+const { maxSize, maxFiles, enableFile } = environment.logging;
 
 // ============================================================================
 // Formatters
@@ -69,8 +68,8 @@ const transports: winston.transport[] = [
     })
 ];
 
-// Add file transports in production
-if (!isDev) {
+// Add file transports when enabled (default: production only)
+if (enableFile) {
     transports.push(
         new DailyRotateFile({
             filename: path.join(logsDir, 'application-%DATE%.log'),

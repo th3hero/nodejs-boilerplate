@@ -15,4 +15,3 @@ export * from './queue';
 export * from './cache';
 
 export { initContainer, getPrisma } from './container';
-export type { Container } from './container';

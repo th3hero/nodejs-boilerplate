@@ -98,14 +98,3 @@ export const verifyToken = (token: string): TokenPayload | null => {
         return null;
     }
 };
-
-// ============================================================================
-// Service Class (for DI compatibility)
-// ============================================================================
-
-export class JwtService {
-    generateTokenPair = generateTokenPair;
-    verifyToken = verifyToken;
-}
-
-export default new JwtService();

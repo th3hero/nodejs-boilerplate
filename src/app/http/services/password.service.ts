@@ -76,15 +76,3 @@ export const verifyPassword = (plainPassword: string, hashedPassword: string, sa
         return false;
     }
 };
-
-// ============================================================================
-// Service Class (for DI compatibility)
-// ============================================================================
-
-export class PasswordService {
-    generateSalt = generateSalt;
-    hashPassword = hashPassword;
-    verifyPassword = verifyPassword;
-}
-
-export default new PasswordService();

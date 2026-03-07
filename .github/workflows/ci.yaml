@@ -9,7 +9,7 @@ on:
 
 jobs:
     ci:
-        name: Build & Lint
+        name: Build, Lint & API Docs
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
@@ -27,7 +27,10 @@ jobs:
             - name: Run linting
               run: npm run lint
 
+            - name: Validate API specification
+              run: npm run docs:validate
+
             - name: Build application
               run: npm run build
               env:
-                  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/myapp
+                  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/plate

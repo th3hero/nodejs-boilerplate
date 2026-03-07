@@ -89,14 +89,14 @@ const HTML_ENTITIES: Record<string, string> = {
  * Escape HTML special characters
  * Only escapes characters that can be used in XSS attacks
  */
-export const escapeHtml = (str: string): string => {
+const escapeHtml = (str: string): string => {
     return str.replace(/[&<>"'`]/g, char => HTML_ENTITIES[char] ?? char);
 };
 
 /**
  * Sanitize string input (escape HTML, trim whitespace)
  */
-export const sanitizeString = (str: string): string => {
+const sanitizeString = (str: string): string => {
     return escapeHtml(str.trim());
 };
 

@@ -73,10 +73,15 @@ export interface Environment {
         level: string;
         maxSize: string;
         maxFiles: string;
+        enableFile: boolean;
     };
     sentry: {
         dsn: string;
         sendDefaultPii: boolean;
+    };
+    docs: {
+        enabled: boolean;
+        path: string;
     };
     aws: {
         region: string;
@@ -88,12 +93,36 @@ export interface Environment {
 }
 
 const env = process.env['NODE_ENV'] || 'development';
+
+const parseBoolean = (value: string | undefined, fallback: boolean): boolean => {
+    if (!value) {
+        return fallback;
+    }
+
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
+        return true;
+    }
+
+    if (normalized === 'false' || normalized === '0' || normalized === 'no') {
+        return false;
+    }
+
+    return fallback;
+};
+
+const parseIntEnv = (key: string, fallback: string): number =>
+    parseInt(process.env[key] || fallback);
+
+const parseFloatEnv = (key: string, fallback: string): number =>
+    parseFloat(process.env[key] || fallback);
+
 const placeholderEmailSuffixRaw = process.env['AUTH_PLACEHOLDER_EMAIL_SUFFIX'] || '@temp.placeholder.local';
 const placeholderEmailSuffix = placeholderEmailSuffixRaw.startsWith('@')
     ? placeholderEmailSuffixRaw.toLowerCase()
     : `@${placeholderEmailSuffixRaw.toLowerCase()}`;
 
-const PORT = parseInt(process.env['PORT'] || '8070');
+const PORT = parseIntEnv('PORT', '8070');
 const environment: Environment = {
     basic: {
         environment: env,
@@ -118,33 +147,33 @@ const environment: Environment = {
             'DELETE',
             'OPTIONS'
         ],
-        maxAge: parseInt(process.env['CORS_MAX_AGE'] || '86400')
+        maxAge: parseIntEnv('CORS_MAX_AGE', '86400')
     },
     rateLimit: {
-        windowMs: parseInt(process.env['RATE_LIMIT_WINDOW_MS'] || '60000'),
-        max: parseInt(process.env['RATE_LIMIT_MAX_REQUESTS'] || '120'),
+        windowMs: parseIntEnv('RATE_LIMIT_WINDOW_MS', '60000'),
+        max: parseIntEnv('RATE_LIMIT_MAX_REQUESTS', '120'),
         login: {
-            windowMs: parseInt(process.env['RATE_LIMIT_LOGIN_WINDOW_MS'] || '900000'),
-            max: parseInt(process.env['RATE_LIMIT_LOGIN_MAX_REQUESTS'] || '20')
+            windowMs: parseIntEnv('RATE_LIMIT_LOGIN_WINDOW_MS', '900000'),
+            max: parseIntEnv('RATE_LIMIT_LOGIN_MAX_REQUESTS', '20')
         },
         otp: {
-            windowMs: parseInt(process.env['RATE_LIMIT_OTP_WINDOW_MS'] || '3600000'),
-            max: parseInt(process.env['RATE_LIMIT_OTP_MAX_REQUESTS'] || '5')
+            windowMs: parseIntEnv('RATE_LIMIT_OTP_WINDOW_MS', '3600000'),
+            max: parseIntEnv('RATE_LIMIT_OTP_MAX_REQUESTS', '5')
         },
-        defaultRetryAfterMs: parseInt(process.env['RATE_LIMIT_RETRY_AFTER_MS'] || '60000')
+        defaultRetryAfterMs: parseIntEnv('RATE_LIMIT_RETRY_AFTER_MS', '60000')
     },
     database: {
         url: process.env['DATABASE_URL'] || 'postgresql://postgres:change-me@127.0.0.1:5432/myapp',
         pool: {
-            max: parseInt(process.env['DATABASE_POOL_MAX'] || '10'),
-            idleTimeoutMillis: parseInt(process.env['DATABASE_POOL_IDLE_TIMEOUT_MS'] || '30000'),
-            connectionTimeoutMillis: parseInt(process.env['DATABASE_POOL_CONNECTION_TIMEOUT_MS'] || '5000')
+            max: parseIntEnv('DATABASE_POOL_MAX', '10'),
+            idleTimeoutMillis: parseIntEnv('DATABASE_POOL_IDLE_TIMEOUT_MS', '30000'),
+            connectionTimeoutMillis: parseIntEnv('DATABASE_POOL_CONNECTION_TIMEOUT_MS', '5000')
         }
     },
     redis: {
         url: process.env['REDIS_URL'] || 'redis://127.0.0.1:6379',
         connectionName: process.env['REDIS_CONNECTION_NAME'] || 'app-service',
-        maxRetriesPerRequest: parseInt(process.env['REDIS_MAX_RETRIES_PER_REQUEST'] || '3')
+        maxRetriesPerRequest: parseIntEnv('REDIS_MAX_RETRIES_PER_REQUEST', '3')
     },
     keyFiles: {
         required: process.env['KEY_FILES']
@@ -158,33 +187,38 @@ const environment: Environment = {
         ]
     },
     systemResources: {
-        minFreeMemoryRatio: parseFloat(process.env['SYSTEM_RESOURCES_MIN_FREE_MEMORY_RATIO'] || '0.03'),
-        maxLoadAverageMultiplier: parseFloat(process.env['SYSTEM_RESOURCES_MAX_LOAD_MULTIPLIER'] || '1.5'),
-        maxLoadAverageAbsolute: parseFloat(process.env['SYSTEM_RESOURCES_MAX_LOAD_ABSOLUTE'] || '6')
+        minFreeMemoryRatio: parseFloatEnv('SYSTEM_RESOURCES_MIN_FREE_MEMORY_RATIO', '0.03'),
+        maxLoadAverageMultiplier: parseFloatEnv('SYSTEM_RESOURCES_MAX_LOAD_MULTIPLIER', '1.5'),
+        maxLoadAverageAbsolute: parseFloatEnv('SYSTEM_RESOURCES_MAX_LOAD_ABSOLUTE', '6')
     },
     jwt: {
         expiresIn: process.env['JWT_EXPIRES_IN'] || '15m',
         refreshExpiresIn: process.env['JWT_REFRESH_EXPIRES_IN'] || '7d'
     },
     auth: {
-        otpExpiryMinutes: parseInt(process.env['AUTH_OTP_EXPIRY_MINUTES'] || '10'),
-        twoFactorExpiryMinutes: parseInt(process.env['AUTH_2FA_EXPIRY_MINUTES'] || '5'),
-        maxLoginAttempts: parseInt(process.env['AUTH_MAX_LOGIN_ATTEMPTS'] || '5'),
-        lockoutMinutes: parseInt(process.env['AUTH_LOCKOUT_MINUTES'] || '30'),
-        maxResendAttempts: parseInt(process.env['AUTH_MAX_RESEND_ATTEMPTS'] || '3'),
-        resendCooldownSeconds: parseInt(process.env['AUTH_RESEND_COOLDOWN_SECONDS'] || '30'),
-        sessionLastUsedDebounceMs: parseInt(process.env['AUTH_SESSION_LAST_USED_DEBOUNCE_MS'] || '120000'),
-        sessionLastUsedMaxWaitMs: parseInt(process.env['AUTH_SESSION_LAST_USED_MAX_WAIT_MS'] || '600000'),
+        otpExpiryMinutes: parseIntEnv('AUTH_OTP_EXPIRY_MINUTES', '10'),
+        twoFactorExpiryMinutes: parseIntEnv('AUTH_2FA_EXPIRY_MINUTES', '5'),
+        maxLoginAttempts: parseIntEnv('AUTH_MAX_LOGIN_ATTEMPTS', '5'),
+        lockoutMinutes: parseIntEnv('AUTH_LOCKOUT_MINUTES', '30'),
+        maxResendAttempts: parseIntEnv('AUTH_MAX_RESEND_ATTEMPTS', '3'),
+        resendCooldownSeconds: parseIntEnv('AUTH_RESEND_COOLDOWN_SECONDS', '30'),
+        sessionLastUsedDebounceMs: parseIntEnv('AUTH_SESSION_LAST_USED_DEBOUNCE_MS', '120000'),
+        sessionLastUsedMaxWaitMs: parseIntEnv('AUTH_SESSION_LAST_USED_MAX_WAIT_MS', '600000'),
         placeholderEmailSuffix
     },
     logging: {
         level: process.env['LOG_LEVEL'] || (env === 'development' ? 'debug' : 'info'),
         maxSize: process.env['LOG_MAX_SIZE'] || '20m',
-        maxFiles: process.env['LOG_MAX_FILES'] || '30d'
+        maxFiles: process.env['LOG_MAX_FILES'] || '30d',
+        enableFile: parseBoolean(process.env['LOG_ENABLE_FILE'], env === 'production')
     },
     sentry: {
         dsn: process.env['SENTRY_DSN'] || '',
-        sendDefaultPii: (process.env['SENTRY_SEND_DEFAULT_PII'] || 'true') === 'true'
+        sendDefaultPii: parseBoolean(process.env['SENTRY_SEND_DEFAULT_PII'], true)
+    },
+    docs: {
+        enabled: parseBoolean(process.env['DOCS_ENABLED'], env !== 'production'),
+        path: process.env['DOCS_PATH'] || '/docs'
     },
     aws: {
         region: process.env['AWS_REGION'] || 'us-east-1',

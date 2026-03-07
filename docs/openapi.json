@@ -1,0 +1,5536 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "LaaoDo API",
+    "version": "1",
+    "description": "LaaoDo API Service"
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Current origin (Swagger UI safe default)"
+    },
+    {
+      "url": "http://localhost:8070",
+      "description": "development environment"
+    }
+  ],
+  "tags": [
+    {
+      "name": "System",
+      "description": "System level endpoints"
+    },
+    {
+      "name": "Auth",
+      "description": "Authentication and session management endpoints"
+    },
+    {
+      "name": "Gallery",
+      "description": "File upload and retrieval endpoints"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "paths": {
+    "/v1/auth/phone": {
+      "post": {
+        "summary": "Send login OTP to phone",
+        "description": "Creates customer user if phone is not registered and sends OTP reference.",
+        "operationId": "auth_sendPhoneOtp",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "OTP generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "OTP sent successfully"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "reference": {
+                          "type": "string"
+                        },
+                        "expires_in": {
+                          "type": "integer"
+                        },
+                        "otp": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Available only in development"
+                        }
+                      },
+                      "required": [
+                        "reference",
+                        "expires_in"
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "statusCode",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Input validation failed"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "VALIDATION_ERROR"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "System configuration error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "System configuration error"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "INTERNAL_SERVER_ERROR"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Phone details for OTP login",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "country_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 5
+                  },
+                  "phone": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 15
+                  }
+                },
+                "required": [
+                  "country_code",
+                  "phone"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/verify/{type}": {
+      "post": {
+        "summary": "Verify OTP / 2FA / MFA code",
+        "description": "Verifies code and completes login/session flow.",
+        "operationId": "auth_verifyOtp",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Verification successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Login successful"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "two_factor_enabled": {
+                          "type": "boolean"
+                        },
+                        "mfa_enabled": {
+                          "type": "boolean"
+                        },
+                        "user": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "first_name": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "last_name": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "email": {
+                              "type": "string",
+                              "format": "email"
+                            },
+                            "phone": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "country_code": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "role": {
+                              "type": "object",
+                              "nullable": true,
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "slug": {
+                                  "type": "string"
+                                },
+                                "for_app": {
+                                  "type": "boolean"
+                                },
+                                "password_required": {
+                                  "type": "boolean"
+                                }
+                              }
+                            },
+                            "avatar": {
+                              "type": "object",
+                              "nullable": true,
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "reference": {
+                                  "type": "string"
+                                },
+                                "path": {
+                                  "type": "string"
+                                },
+                                "thumbnail": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "bucket": {
+                                  "type": "string"
+                                },
+                                "is_public": {
+                                  "type": "boolean"
+                                },
+                                "url": {
+                                  "type": "string",
+                                  "nullable": true
+                                }
+                              }
+                            },
+                            "is_verified": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "email",
+                            "is_verified"
+                          ]
+                        },
+                        "tokens": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "auth": {
+                              "type": "string"
+                            },
+                            "refresh": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "auth",
+                            "refresh"
+                          ]
+                        },
+                        "token_expiry": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "permissions": {
+                          "type": "object",
+                          "additionalProperties": true
+                        }
+                      },
+                      "required": [
+                        "two_factor_enabled",
+                        "mfa_enabled",
+                        "user",
+                        "tokens",
+                        "token_expiry",
+                        "permissions"
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "statusCode",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired token/code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid verification code"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "INVALID_2FA_CODE"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid credentials"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "INVALID_CREDENTIALS"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "User not found"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "NOT_FOUND"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Validation failed"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "VALIDATION_ERROR"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "type",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "otp",
+                "2fa",
+                "mfa",
+                "email"
+              ]
+            },
+            "description": "Verification purpose type"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Verification payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "reference": {
+                    "type": "string"
+                  },
+                  "code": {
+                    "type": "string",
+                    "minLength": 6,
+                    "maxLength": 6,
+                    "pattern": "^[0-9]{6}$"
+                  },
+                  "fcm_token": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "device": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "nullable": true
+                  },
+                  "identifier": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "platform": {
+                    "type": "string",
+                    "enum": [
+                      "android",
+                      "ios",
+                      "web"
+                    ],
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "reference",
+                  "code"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/otp/resend": {
+      "post": {
+        "summary": "Resend verification OTP",
+        "description": "Resends OTP using existing reference. Protected by resend limits.",
+        "operationId": "auth_resendOtp",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "OTP resent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "OTP resent"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "reference": {
+                          "type": "string"
+                        },
+                        "expires_in": {
+                          "type": "integer"
+                        },
+                        "attempts_remaining": {
+                          "type": "integer"
+                        },
+                        "otp": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "reference",
+                        "expires_in",
+                        "attempts_remaining"
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "statusCode",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Reference not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid reference"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "NOT_FOUND"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Too many requests"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "TOO_MANY_ATTEMPTS"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Reference returned by previous OTP request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "reference": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "reference"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/login": {
+      "post": {
+        "summary": "Email/password login",
+        "description": "Authenticates user via password. Can return 2FA/MFA verification response.",
+        "operationId": "auth_passwordLogin",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Login response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Login successful"
+                    },
+                    "data": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "two_factor_enabled": {
+                              "type": "boolean"
+                            },
+                            "mfa_enabled": {
+                              "type": "boolean"
+                            },
+                            "user": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "first_name": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "last_name": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "email": {
+                                  "type": "string",
+                                  "format": "email"
+                                },
+                                "phone": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "country_code": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "role": {
+                                  "type": "object",
+                                  "nullable": true,
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "slug": {
+                                      "type": "string"
+                                    },
+                                    "for_app": {
+                                      "type": "boolean"
+                                    },
+                                    "password_required": {
+                                      "type": "boolean"
+                                    }
+                                  }
+                                },
+                                "avatar": {
+                                  "type": "object",
+                                  "nullable": true,
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "reference": {
+                                      "type": "string"
+                                    },
+                                    "path": {
+                                      "type": "string"
+                                    },
+                                    "thumbnail": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "bucket": {
+                                      "type": "string"
+                                    },
+                                    "is_public": {
+                                      "type": "boolean"
+                                    },
+                                    "url": {
+                                      "type": "string",
+                                      "nullable": true
+                                    }
+                                  }
+                                },
+                                "is_verified": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "email",
+                                "is_verified"
+                              ]
+                            },
+                            "tokens": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "auth": {
+                                  "type": "string"
+                                },
+                                "refresh": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "auth",
+                                "refresh"
+                              ]
+                            },
+                            "token_expiry": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "permissions": {
+                              "type": "object",
+                              "additionalProperties": true
+                            }
+                          },
+                          "required": [
+                            "two_factor_enabled",
+                            "mfa_enabled",
+                            "user",
+                            "tokens",
+                            "token_expiry",
+                            "permissions"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "two_factor_enabled": {
+                              "type": "boolean"
+                            },
+                            "mfa_enabled": {
+                              "type": "boolean"
+                            },
+                            "reference": {
+                              "type": "string"
+                            },
+                            "expires_in": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "two_factor_enabled",
+                            "mfa_enabled",
+                            "reference",
+                            "expires_in"
+                          ]
+                        }
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "statusCode",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials or session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid credentials"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "INVALID_CREDENTIALS"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permission denied / account suspended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Permission denied"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "PERMISSION_DENIED"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Input validation failed"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "VALIDATION_ERROR"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "423": {
+            "description": "Account locked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Account locked"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "ACCOUNT_LOCKED"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Credentials and optional device metadata",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8
+                  },
+                  "fcm_token": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "device": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "nullable": true
+                  },
+                  "identifier": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "platform": {
+                    "type": "string",
+                    "enum": [
+                      "android",
+                      "ios",
+                      "web"
+                    ],
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/password/forgot": {
+      "post": {
+        "summary": "Request password reset",
+        "description": "Always returns success message to avoid user enumeration.",
+        "operationId": "auth_forgotPassword",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Password reset request accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Password reset requested"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "reset_token": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Available only in development"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "statusCode",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Input validation failed"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "VALIDATION_ERROR"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Email for reset request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                },
+                "required": [
+                  "email"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/password/reset": {
+      "post": {
+        "summary": "Reset password with token",
+        "description": "Consumes password reset token and updates password.",
+        "operationId": "auth_resetPassword",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Password updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Password reset successful"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "statusCode",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid token"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "INVALID_PASSWORD_RESET_TOKEN"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "User not found"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "NOT_FOUND"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Passwords do not match"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "VALIDATION_ERROR"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Reset token and new password",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8
+                  },
+                  "password_confirmation": {
+                    "type": "string",
+                    "minLength": 8
+                  }
+                },
+                "required": [
+                  "token",
+                  "password",
+                  "password_confirmation"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/me": {
+      "get": {
+        "summary": "Get authenticated user profile",
+        "description": "Returns the complete profile of current authenticated user.",
+        "operationId": "auth_getMe",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Current user profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "User fetched"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "user": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "first_name": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "last_name": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "email": {
+                              "type": "string",
+                              "format": "email"
+                            },
+                            "phone": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "country_code": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "role": {
+                              "type": "object",
+                              "nullable": true,
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "slug": {
+                                  "type": "string"
+                                },
+                                "for_app": {
+                                  "type": "boolean"
+                                },
+                                "password_required": {
+                                  "type": "boolean"
+                                }
+                              }
+                            },
+                            "avatar": {
+                              "type": "object",
+                              "nullable": true,
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "reference": {
+                                  "type": "string"
+                                },
+                                "path": {
+                                  "type": "string"
+                                },
+                                "thumbnail": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "bucket": {
+                                  "type": "string"
+                                },
+                                "is_public": {
+                                  "type": "boolean"
+                                },
+                                "url": {
+                                  "type": "string",
+                                  "nullable": true
+                                }
+                              }
+                            },
+                            "is_verified": {
+                              "type": "boolean"
+                            },
+                            "avatar_id": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "latitude": {
+                              "type": "number",
+                              "nullable": true
+                            },
+                            "longitude": {
+                              "type": "number",
+                              "nullable": true
+                            },
+                            "mfa_enabled": {
+                              "type": "boolean"
+                            },
+                            "otp_auth": {
+                              "type": "boolean"
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "remarks": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "last_login_at": {
+                              "type": "string",
+                              "format": "date-time",
+                              "nullable": true
+                            },
+                            "verified": {
+                              "type": "boolean"
+                            },
+                            "email_verified": {
+                              "type": "boolean"
+                            },
+                            "email_verified_at": {
+                              "type": "string",
+                              "format": "date-time",
+                              "nullable": true
+                            },
+                            "phone_verified": {
+                              "type": "boolean"
+                            },
+                            "phone_verified_at": {
+                              "type": "string",
+                              "format": "date-time",
+                              "nullable": true
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "updated_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "email",
+                            "status",
+                            "created_at",
+                            "updated_at"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "user"
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "statusCode",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication/session validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Access token required"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "SESSION_NOT_VALID"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "tokenRequired": {
+                    "summary": "Missing bearer token",
+                    "value": {
+                      "success": false,
+                      "message": "Access token required",
+                      "error_code": "SESSION_NOT_VALID",
+                      "error": {
+                        "message": "Access token required"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "f2fd155b-f4c0-4ac8-a68b-2f7f21c0f9ec"
+                    }
+                  },
+                  "tokenExpired": {
+                    "summary": "Expired token",
+                    "value": {
+                      "success": false,
+                      "message": "Session has expired",
+                      "error_code": "SESSION_EXPIRED",
+                      "error": {
+                        "message": "Session has expired"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "ee519a03-3646-414b-af00-cd5b2efa4b2f"
+                    }
+                  },
+                  "tokenWrongType": {
+                    "summary": "Wrong token type",
+                    "value": {
+                      "success": false,
+                      "message": "Invalid token type. Access token required.",
+                      "error_code": "TOKEN_INVALID",
+                      "error": {
+                        "message": "Invalid token type. Access token required."
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "7070ba35-b90d-47e7-8320-6d85f9fa05c7"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Permission denied"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "PERMISSION_DENIED"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "suspendedAccount": {
+                    "summary": "Suspended or banned account",
+                    "value": {
+                      "success": false,
+                      "message": "Account is suspended or banned",
+                      "error_code": "ACCOUNT_SUSPENDED",
+                      "error": {
+                        "message": "Account is suspended or banned"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "8e8d95bc-bfee-4c72-8dc8-95a4a1bdcb5a"
+                    }
+                  },
+                  "permissionDenied": {
+                    "summary": "Missing permission for route",
+                    "value": {
+                      "success": false,
+                      "message": "Permission denied: gallery:read",
+                      "error_code": "PERMISSION_DENIED",
+                      "error": {
+                        "message": "Permission denied: gallery:read"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "0f2c9f4d-cabc-4fcb-ac44-8a28f3a5ef7d"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "User not found"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "NOT_FOUND"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/auth/me/avatar": {
+      "put": {
+        "summary": "Update user avatar reference",
+        "description": "Sets or clears current user avatar using gallery reference.",
+        "operationId": "auth_updateAvatar",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Avatar updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Avatar updated"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "avatar_id": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "avatar": {
+                          "type": "object",
+                          "nullable": true,
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "reference": {
+                              "type": "string"
+                            },
+                            "path": {
+                              "type": "string"
+                            },
+                            "thumbnail": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "bucket": {
+                              "type": "string"
+                            },
+                            "is_public": {
+                              "type": "boolean"
+                            },
+                            "url": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          }
+                        }
+                      },
+                      "required": [
+                        "avatar_id",
+                        "avatar"
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "statusCode",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication/session validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Access token required"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "SESSION_NOT_VALID"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "tokenRequired": {
+                    "summary": "Missing bearer token",
+                    "value": {
+                      "success": false,
+                      "message": "Access token required",
+                      "error_code": "SESSION_NOT_VALID",
+                      "error": {
+                        "message": "Access token required"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "f2fd155b-f4c0-4ac8-a68b-2f7f21c0f9ec"
+                    }
+                  },
+                  "tokenExpired": {
+                    "summary": "Expired token",
+                    "value": {
+                      "success": false,
+                      "message": "Session has expired",
+                      "error_code": "SESSION_EXPIRED",
+                      "error": {
+                        "message": "Session has expired"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "ee519a03-3646-414b-af00-cd5b2efa4b2f"
+                    }
+                  },
+                  "tokenWrongType": {
+                    "summary": "Wrong token type",
+                    "value": {
+                      "success": false,
+                      "message": "Invalid token type. Access token required.",
+                      "error_code": "TOKEN_INVALID",
+                      "error": {
+                        "message": "Invalid token type. Access token required."
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "7070ba35-b90d-47e7-8320-6d85f9fa05c7"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Permission denied"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "PERMISSION_DENIED"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "suspendedAccount": {
+                    "summary": "Suspended or banned account",
+                    "value": {
+                      "success": false,
+                      "message": "Account is suspended or banned",
+                      "error_code": "ACCOUNT_SUSPENDED",
+                      "error": {
+                        "message": "Account is suspended or banned"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "8e8d95bc-bfee-4c72-8dc8-95a4a1bdcb5a"
+                    }
+                  },
+                  "permissionDenied": {
+                    "summary": "Missing permission for route",
+                    "value": {
+                      "success": false,
+                      "message": "Permission denied: gallery:read",
+                      "error_code": "PERMISSION_DENIED",
+                      "error": {
+                        "message": "Permission denied: gallery:read"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "0f2c9f4d-cabc-4fcb-ac44-8a28f3a5ef7d"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User/gallery not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Gallery not found or not accessible"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "NOT_FOUND"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid avatar ID"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "VALIDATION_ERROR"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Avatar ID from gallery or null to remove",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "avatar_id": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "avatar_id"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "summary": "Logout current session",
+        "description": "Invalidates authenticated session token.",
+        "operationId": "auth_logout",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Logout successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Logout successful"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "statusCode",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication/session validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Access token required"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "SESSION_NOT_VALID"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "tokenRequired": {
+                    "summary": "Missing bearer token",
+                    "value": {
+                      "success": false,
+                      "message": "Access token required",
+                      "error_code": "SESSION_NOT_VALID",
+                      "error": {
+                        "message": "Access token required"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "f2fd155b-f4c0-4ac8-a68b-2f7f21c0f9ec"
+                    }
+                  },
+                  "tokenExpired": {
+                    "summary": "Expired token",
+                    "value": {
+                      "success": false,
+                      "message": "Session has expired",
+                      "error_code": "SESSION_EXPIRED",
+                      "error": {
+                        "message": "Session has expired"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "ee519a03-3646-414b-af00-cd5b2efa4b2f"
+                    }
+                  },
+                  "tokenWrongType": {
+                    "summary": "Wrong token type",
+                    "value": {
+                      "success": false,
+                      "message": "Invalid token type. Access token required.",
+                      "error_code": "TOKEN_INVALID",
+                      "error": {
+                        "message": "Invalid token type. Access token required."
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "7070ba35-b90d-47e7-8320-6d85f9fa05c7"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Permission denied"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "PERMISSION_DENIED"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "suspendedAccount": {
+                    "summary": "Suspended or banned account",
+                    "value": {
+                      "success": false,
+                      "message": "Account is suspended or banned",
+                      "error_code": "ACCOUNT_SUSPENDED",
+                      "error": {
+                        "message": "Account is suspended or banned"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "8e8d95bc-bfee-4c72-8dc8-95a4a1bdcb5a"
+                    }
+                  },
+                  "permissionDenied": {
+                    "summary": "Missing permission for route",
+                    "value": {
+                      "success": false,
+                      "message": "Permission denied: gallery:read",
+                      "error_code": "PERMISSION_DENIED",
+                      "error": {
+                        "message": "Permission denied: gallery:read"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "0f2c9f4d-cabc-4fcb-ac44-8a28f3a5ef7d"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Session not found"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "NOT_FOUND"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/auth/refresh": {
+      "post": {
+        "summary": "Refresh access token",
+        "description": "Rotates session and returns fresh auth/refresh tokens.",
+        "operationId": "auth_refreshToken",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Token refreshed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Token refreshed"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "two_factor_enabled": {
+                          "type": "boolean"
+                        },
+                        "mfa_enabled": {
+                          "type": "boolean"
+                        },
+                        "user": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "first_name": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "last_name": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "email": {
+                              "type": "string",
+                              "format": "email"
+                            },
+                            "phone": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "country_code": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "role": {
+                              "type": "object",
+                              "nullable": true,
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "slug": {
+                                  "type": "string"
+                                },
+                                "for_app": {
+                                  "type": "boolean"
+                                },
+                                "password_required": {
+                                  "type": "boolean"
+                                }
+                              }
+                            },
+                            "avatar": {
+                              "type": "object",
+                              "nullable": true,
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "reference": {
+                                  "type": "string"
+                                },
+                                "path": {
+                                  "type": "string"
+                                },
+                                "thumbnail": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "bucket": {
+                                  "type": "string"
+                                },
+                                "is_public": {
+                                  "type": "boolean"
+                                },
+                                "url": {
+                                  "type": "string",
+                                  "nullable": true
+                                }
+                              }
+                            },
+                            "is_verified": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "email",
+                            "is_verified"
+                          ]
+                        },
+                        "tokens": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "auth": {
+                              "type": "string"
+                            },
+                            "refresh": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "auth",
+                            "refresh"
+                          ]
+                        },
+                        "token_expiry": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "permissions": {
+                          "type": "object",
+                          "additionalProperties": true
+                        }
+                      },
+                      "required": [
+                        "two_factor_enabled",
+                        "mfa_enabled",
+                        "user",
+                        "tokens",
+                        "token_expiry",
+                        "permissions"
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "statusCode",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication/session validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Access token required"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "SESSION_NOT_VALID"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "tokenRequired": {
+                    "summary": "Missing bearer token",
+                    "value": {
+                      "success": false,
+                      "message": "Access token required",
+                      "error_code": "SESSION_NOT_VALID",
+                      "error": {
+                        "message": "Access token required"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "f2fd155b-f4c0-4ac8-a68b-2f7f21c0f9ec"
+                    }
+                  },
+                  "tokenExpired": {
+                    "summary": "Expired token",
+                    "value": {
+                      "success": false,
+                      "message": "Session has expired",
+                      "error_code": "SESSION_EXPIRED",
+                      "error": {
+                        "message": "Session has expired"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "ee519a03-3646-414b-af00-cd5b2efa4b2f"
+                    }
+                  },
+                  "tokenWrongType": {
+                    "summary": "Wrong token type",
+                    "value": {
+                      "success": false,
+                      "message": "Invalid token type. Access token required.",
+                      "error_code": "TOKEN_INVALID",
+                      "error": {
+                        "message": "Invalid token type. Access token required."
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "7070ba35-b90d-47e7-8320-6d85f9fa05c7"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Permission denied"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "PERMISSION_DENIED"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "suspendedAccount": {
+                    "summary": "Suspended or banned account",
+                    "value": {
+                      "success": false,
+                      "message": "Account is suspended or banned",
+                      "error_code": "ACCOUNT_SUSPENDED",
+                      "error": {
+                        "message": "Account is suspended or banned"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "8e8d95bc-bfee-4c72-8dc8-95a4a1bdcb5a"
+                    }
+                  },
+                  "permissionDenied": {
+                    "summary": "Missing permission for route",
+                    "value": {
+                      "success": false,
+                      "message": "Permission denied: gallery:read",
+                      "error_code": "PERMISSION_DENIED",
+                      "error": {
+                        "message": "Permission denied: gallery:read"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "0f2c9f4d-cabc-4fcb-ac44-8a28f3a5ef7d"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "User not found"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "NOT_FOUND"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/gallery/init": {
+      "post": {
+        "summary": "Initialize file upload",
+        "description": "Generates a presigned upload URL and creates a pending gallery record.",
+        "operationId": "gallery_initUpload",
+        "tags": [
+          "Gallery"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upload initialized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Upload initialized"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "reference": {
+                          "type": "string"
+                        },
+                        "uploadUrl": {
+                          "type": "string"
+                        },
+                        "bucket": {
+                          "type": "string",
+                          "enum": [
+                            "documents",
+                            "public"
+                          ]
+                        },
+                        "path": {
+                          "type": "string"
+                        },
+                        "expiresIn": {
+                          "type": "integer"
+                        },
+                        "galleryId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "reference",
+                        "uploadUrl",
+                        "bucket",
+                        "path",
+                        "expiresIn",
+                        "galleryId"
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "statusCode",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Upload initialization failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Failed to initialize upload"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "VALIDATION_ERROR"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication/session validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Access token required"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "SESSION_NOT_VALID"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "tokenRequired": {
+                    "summary": "Missing bearer token",
+                    "value": {
+                      "success": false,
+                      "message": "Access token required",
+                      "error_code": "SESSION_NOT_VALID",
+                      "error": {
+                        "message": "Access token required"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "f2fd155b-f4c0-4ac8-a68b-2f7f21c0f9ec"
+                    }
+                  },
+                  "tokenExpired": {
+                    "summary": "Expired token",
+                    "value": {
+                      "success": false,
+                      "message": "Session has expired",
+                      "error_code": "SESSION_EXPIRED",
+                      "error": {
+                        "message": "Session has expired"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "ee519a03-3646-414b-af00-cd5b2efa4b2f"
+                    }
+                  },
+                  "tokenWrongType": {
+                    "summary": "Wrong token type",
+                    "value": {
+                      "success": false,
+                      "message": "Invalid token type. Access token required.",
+                      "error_code": "TOKEN_INVALID",
+                      "error": {
+                        "message": "Invalid token type. Access token required."
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "7070ba35-b90d-47e7-8320-6d85f9fa05c7"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Permission denied"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "PERMISSION_DENIED"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "suspendedAccount": {
+                    "summary": "Suspended or banned account",
+                    "value": {
+                      "success": false,
+                      "message": "Account is suspended or banned",
+                      "error_code": "ACCOUNT_SUSPENDED",
+                      "error": {
+                        "message": "Account is suspended or banned"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "8e8d95bc-bfee-4c72-8dc8-95a4a1bdcb5a"
+                    }
+                  },
+                  "permissionDenied": {
+                    "summary": "Missing permission for route",
+                    "value": {
+                      "success": false,
+                      "message": "Permission denied: gallery:read",
+                      "error_code": "PERMISSION_DENIED",
+                      "error": {
+                        "message": "Permission denied: gallery:read"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "0f2c9f4d-cabc-4fcb-ac44-8a28f3a5ef7d"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Input validation failed"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "VALIDATION_ERROR"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Upload metadata and destination configuration",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "fileName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "contentType": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 100
+                  },
+                  "fileSize": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "bucket": {
+                    "type": "string",
+                    "enum": [
+                      "documents",
+                      "public"
+                    ]
+                  },
+                  "folder": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "isPublic": {
+                    "type": "boolean"
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 255
+                  }
+                },
+                "required": [
+                  "fileName",
+                  "contentType",
+                  "fileSize"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/gallery/confirm": {
+      "post": {
+        "summary": "Confirm upload completion",
+        "description": "Confirms uploaded object in storage and marks gallery as uploaded.",
+        "operationId": "gallery_confirmUpload",
+        "tags": [
+          "Gallery"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upload confirmed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Upload confirmed"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "gallery": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "reference": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "description": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "filetype": {
+                              "type": "string"
+                            },
+                            "extension": {
+                              "type": "string"
+                            },
+                            "size": {
+                              "type": "string"
+                            },
+                            "height": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "width": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "bucket": {
+                              "type": "string"
+                            },
+                            "is_public": {
+                              "type": "boolean"
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "image",
+                                "video",
+                                "pdf"
+                              ]
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "pending",
+                                "uploaded",
+                                "failed"
+                              ]
+                            },
+                            "view_url": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "updated_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "reference",
+                            "filetype",
+                            "extension",
+                            "size",
+                            "bucket",
+                            "is_public",
+                            "type",
+                            "status",
+                            "created_at",
+                            "updated_at"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "gallery"
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "statusCode",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Confirmation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Upload confirmation failed"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "VALIDATION_ERROR"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication/session validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Access token required"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "SESSION_NOT_VALID"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "tokenRequired": {
+                    "summary": "Missing bearer token",
+                    "value": {
+                      "success": false,
+                      "message": "Access token required",
+                      "error_code": "SESSION_NOT_VALID",
+                      "error": {
+                        "message": "Access token required"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "f2fd155b-f4c0-4ac8-a68b-2f7f21c0f9ec"
+                    }
+                  },
+                  "tokenExpired": {
+                    "summary": "Expired token",
+                    "value": {
+                      "success": false,
+                      "message": "Session has expired",
+                      "error_code": "SESSION_EXPIRED",
+                      "error": {
+                        "message": "Session has expired"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "ee519a03-3646-414b-af00-cd5b2efa4b2f"
+                    }
+                  },
+                  "tokenWrongType": {
+                    "summary": "Wrong token type",
+                    "value": {
+                      "success": false,
+                      "message": "Invalid token type. Access token required.",
+                      "error_code": "TOKEN_INVALID",
+                      "error": {
+                        "message": "Invalid token type. Access token required."
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "7070ba35-b90d-47e7-8320-6d85f9fa05c7"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Permission denied"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "PERMISSION_DENIED"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "suspendedAccount": {
+                    "summary": "Suspended or banned account",
+                    "value": {
+                      "success": false,
+                      "message": "Account is suspended or banned",
+                      "error_code": "ACCOUNT_SUSPENDED",
+                      "error": {
+                        "message": "Account is suspended or banned"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "8e8d95bc-bfee-4c72-8dc8-95a4a1bdcb5a"
+                    }
+                  },
+                  "permissionDenied": {
+                    "summary": "Missing permission for route",
+                    "value": {
+                      "success": false,
+                      "message": "Permission denied: gallery:read",
+                      "error_code": "PERMISSION_DENIED",
+                      "error": {
+                        "message": "Permission denied: gallery:read"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "0f2c9f4d-cabc-4fcb-ac44-8a28f3a5ef7d"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Input validation failed"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "VALIDATION_ERROR"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Upload reference returned by init endpoint",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "reference": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  }
+                },
+                "required": [
+                  "reference"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/gallery": {
+      "get": {
+        "summary": "List galleries",
+        "description": "Returns uploaded galleries based on permission scope with pagination.",
+        "operationId": "gallery_list",
+        "tags": [
+          "Gallery"
+        ],
+        "responses": {
+          "200": {
+            "description": "Galleries fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Galleries fetched"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "galleries": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "reference": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "description": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "filetype": {
+                                "type": "string"
+                              },
+                              "extension": {
+                                "type": "string"
+                              },
+                              "size": {
+                                "type": "string"
+                              },
+                              "height": {
+                                "type": "integer",
+                                "nullable": true
+                              },
+                              "width": {
+                                "type": "integer",
+                                "nullable": true
+                              },
+                              "bucket": {
+                                "type": "string"
+                              },
+                              "is_public": {
+                                "type": "boolean"
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "image",
+                                  "video",
+                                  "pdf"
+                                ]
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "pending",
+                                  "uploaded",
+                                  "failed"
+                                ]
+                              },
+                              "view_url": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "updated_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "reference",
+                              "filetype",
+                              "extension",
+                              "size",
+                              "bucket",
+                              "is_public",
+                              "type",
+                              "status",
+                              "created_at",
+                              "updated_at"
+                            ]
+                          }
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "offset": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "galleries",
+                        "total",
+                        "limit",
+                        "offset"
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "statusCode",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication/session validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Access token required"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "SESSION_NOT_VALID"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "tokenRequired": {
+                    "summary": "Missing bearer token",
+                    "value": {
+                      "success": false,
+                      "message": "Access token required",
+                      "error_code": "SESSION_NOT_VALID",
+                      "error": {
+                        "message": "Access token required"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "f2fd155b-f4c0-4ac8-a68b-2f7f21c0f9ec"
+                    }
+                  },
+                  "tokenExpired": {
+                    "summary": "Expired token",
+                    "value": {
+                      "success": false,
+                      "message": "Session has expired",
+                      "error_code": "SESSION_EXPIRED",
+                      "error": {
+                        "message": "Session has expired"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "ee519a03-3646-414b-af00-cd5b2efa4b2f"
+                    }
+                  },
+                  "tokenWrongType": {
+                    "summary": "Wrong token type",
+                    "value": {
+                      "success": false,
+                      "message": "Invalid token type. Access token required.",
+                      "error_code": "TOKEN_INVALID",
+                      "error": {
+                        "message": "Invalid token type. Access token required."
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "7070ba35-b90d-47e7-8320-6d85f9fa05c7"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Permission denied"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "PERMISSION_DENIED"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "suspendedAccount": {
+                    "summary": "Suspended or banned account",
+                    "value": {
+                      "success": false,
+                      "message": "Account is suspended or banned",
+                      "error_code": "ACCOUNT_SUSPENDED",
+                      "error": {
+                        "message": "Account is suspended or banned"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "8e8d95bc-bfee-4c72-8dc8-95a4a1bdcb5a"
+                    }
+                  },
+                  "permissionDenied": {
+                    "summary": "Missing permission for route",
+                    "value": {
+                      "success": false,
+                      "message": "Permission denied: gallery:read",
+                      "error_code": "PERMISSION_DENIED",
+                      "error": {
+                        "message": "Permission denied: gallery:read"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "0f2c9f4d-cabc-4fcb-ac44-8a28f3a5ef7d"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "description": "Number of records to return"
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Pagination offset"
+          }
+        ]
+      }
+    },
+    "/v1/gallery/{id}": {
+      "get": {
+        "summary": "Get gallery details",
+        "description": "Returns gallery metadata and view URL when available.",
+        "operationId": "gallery_getById",
+        "tags": [
+          "Gallery"
+        ],
+        "responses": {
+          "200": {
+            "description": "Gallery fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Gallery fetched"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "gallery": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "reference": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "description": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "filetype": {
+                              "type": "string"
+                            },
+                            "extension": {
+                              "type": "string"
+                            },
+                            "size": {
+                              "type": "string"
+                            },
+                            "height": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "width": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "bucket": {
+                              "type": "string"
+                            },
+                            "is_public": {
+                              "type": "boolean"
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "image",
+                                "video",
+                                "pdf"
+                              ]
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "pending",
+                                "uploaded",
+                                "failed"
+                              ]
+                            },
+                            "view_url": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "updated_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "reference",
+                            "filetype",
+                            "extension",
+                            "size",
+                            "bucket",
+                            "is_public",
+                            "type",
+                            "status",
+                            "created_at",
+                            "updated_at"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "gallery"
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "statusCode",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid gallery ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid Gallery ID"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "VALIDATION_ERROR"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication/session validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Access token required"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "SESSION_NOT_VALID"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "tokenRequired": {
+                    "summary": "Missing bearer token",
+                    "value": {
+                      "success": false,
+                      "message": "Access token required",
+                      "error_code": "SESSION_NOT_VALID",
+                      "error": {
+                        "message": "Access token required"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "f2fd155b-f4c0-4ac8-a68b-2f7f21c0f9ec"
+                    }
+                  },
+                  "tokenExpired": {
+                    "summary": "Expired token",
+                    "value": {
+                      "success": false,
+                      "message": "Session has expired",
+                      "error_code": "SESSION_EXPIRED",
+                      "error": {
+                        "message": "Session has expired"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "ee519a03-3646-414b-af00-cd5b2efa4b2f"
+                    }
+                  },
+                  "tokenWrongType": {
+                    "summary": "Wrong token type",
+                    "value": {
+                      "success": false,
+                      "message": "Invalid token type. Access token required.",
+                      "error_code": "TOKEN_INVALID",
+                      "error": {
+                        "message": "Invalid token type. Access token required."
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "7070ba35-b90d-47e7-8320-6d85f9fa05c7"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Permission denied"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "PERMISSION_DENIED"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "suspendedAccount": {
+                    "summary": "Suspended or banned account",
+                    "value": {
+                      "success": false,
+                      "message": "Account is suspended or banned",
+                      "error_code": "ACCOUNT_SUSPENDED",
+                      "error": {
+                        "message": "Account is suspended or banned"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "8e8d95bc-bfee-4c72-8dc8-95a4a1bdcb5a"
+                    }
+                  },
+                  "permissionDenied": {
+                    "summary": "Missing permission for route",
+                    "value": {
+                      "success": false,
+                      "message": "Permission denied: gallery:read",
+                      "error_code": "PERMISSION_DENIED",
+                      "error": {
+                        "message": "Permission denied: gallery:read"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "0f2c9f4d-cabc-4fcb-ac44-8a28f3a5ef7d"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Gallery not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Gallery not found"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "NOT_FOUND"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Gallery ID (bigint as string)"
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete gallery",
+        "description": "Deletes gallery metadata and stored file if applicable.",
+        "operationId": "gallery_delete",
+        "tags": [
+          "Gallery"
+        ],
+        "responses": {
+          "200": {
+            "description": "Gallery deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Gallery deleted"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "deleted": {
+                          "type": "boolean",
+                          "example": true
+                        }
+                      },
+                      "required": [
+                        "deleted"
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "statusCode",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid gallery ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid Gallery ID"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "VALIDATION_ERROR"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication/session validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Access token required"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "SESSION_NOT_VALID"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "tokenRequired": {
+                    "summary": "Missing bearer token",
+                    "value": {
+                      "success": false,
+                      "message": "Access token required",
+                      "error_code": "SESSION_NOT_VALID",
+                      "error": {
+                        "message": "Access token required"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "f2fd155b-f4c0-4ac8-a68b-2f7f21c0f9ec"
+                    }
+                  },
+                  "tokenExpired": {
+                    "summary": "Expired token",
+                    "value": {
+                      "success": false,
+                      "message": "Session has expired",
+                      "error_code": "SESSION_EXPIRED",
+                      "error": {
+                        "message": "Session has expired"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "ee519a03-3646-414b-af00-cd5b2efa4b2f"
+                    }
+                  },
+                  "tokenWrongType": {
+                    "summary": "Wrong token type",
+                    "value": {
+                      "success": false,
+                      "message": "Invalid token type. Access token required.",
+                      "error_code": "TOKEN_INVALID",
+                      "error": {
+                        "message": "Invalid token type. Access token required."
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "7070ba35-b90d-47e7-8320-6d85f9fa05c7"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not authorized or blocked by resource constraints",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Not authorized to delete this file"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "PERMISSION_DENIED"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "notOwner": {
+                    "summary": "Attempt to delete another user file",
+                    "value": {
+                      "success": false,
+                      "message": "Not authorized to delete this file",
+                      "error_code": "PERMISSION_DENIED",
+                      "error": {
+                        "delete": "Not authorized to delete this file"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "2f62ace0-2fb6-4f35-9244-8f4f56f062fb"
+                    }
+                  },
+                  "inUse": {
+                    "summary": "Gallery still referenced by another record",
+                    "value": {
+                      "success": false,
+                      "message": "Cannot delete file — it is still in use by another resource (e.g., avatar, document)",
+                      "error_code": "PERMISSION_DENIED",
+                      "error": {
+                        "delete": "Cannot delete file — it is still in use by another resource (e.g., avatar, document)"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "8fbe357c-9f74-4f72-aad9-0572445cc611"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Gallery not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Gallery not found"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "NOT_FOUND"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Gallery ID (bigint as string)"
+          }
+        ]
+      }
+    },
+    "/v1/gallery/{id}/url": {
+      "get": {
+        "summary": "Get gallery view URL",
+        "description": "Generates a presigned view URL for an uploaded gallery file.",
+        "operationId": "gallery_getViewUrl",
+        "tags": [
+          "Gallery"
+        ],
+        "responses": {
+          "200": {
+            "description": "View URL generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "View URL generated"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "viewUrl": {
+                          "type": "string"
+                        },
+                        "expiresIn": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "viewUrl",
+                        "expiresIn"
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "statusCode",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid gallery ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid Gallery ID"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "VALIDATION_ERROR"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication/session validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Access token required"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "SESSION_NOT_VALID"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "tokenRequired": {
+                    "summary": "Missing bearer token",
+                    "value": {
+                      "success": false,
+                      "message": "Access token required",
+                      "error_code": "SESSION_NOT_VALID",
+                      "error": {
+                        "message": "Access token required"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "f2fd155b-f4c0-4ac8-a68b-2f7f21c0f9ec"
+                    }
+                  },
+                  "tokenExpired": {
+                    "summary": "Expired token",
+                    "value": {
+                      "success": false,
+                      "message": "Session has expired",
+                      "error_code": "SESSION_EXPIRED",
+                      "error": {
+                        "message": "Session has expired"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "ee519a03-3646-414b-af00-cd5b2efa4b2f"
+                    }
+                  },
+                  "tokenWrongType": {
+                    "summary": "Wrong token type",
+                    "value": {
+                      "success": false,
+                      "message": "Invalid token type. Access token required.",
+                      "error_code": "TOKEN_INVALID",
+                      "error": {
+                        "message": "Invalid token type. Access token required."
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "7070ba35-b90d-47e7-8320-6d85f9fa05c7"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Permission denied"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "PERMISSION_DENIED"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                },
+                "examples": {
+                  "suspendedAccount": {
+                    "summary": "Suspended or banned account",
+                    "value": {
+                      "success": false,
+                      "message": "Account is suspended or banned",
+                      "error_code": "ACCOUNT_SUSPENDED",
+                      "error": {
+                        "message": "Account is suspended or banned"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "8e8d95bc-bfee-4c72-8dc8-95a4a1bdcb5a"
+                    }
+                  },
+                  "permissionDenied": {
+                    "summary": "Missing permission for route",
+                    "value": {
+                      "success": false,
+                      "message": "Permission denied: gallery:read",
+                      "error_code": "PERMISSION_DENIED",
+                      "error": {
+                        "message": "Permission denied: gallery:read"
+                      },
+                      "timestamp": "2026-01-01T10:00:00.000Z",
+                      "requestId": "0f2c9f4d-cabc-4fcb-ac44-8a28f3a5ef7d"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Gallery not found or not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Gallery not found or not ready"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "example": "NOT_FOUND"
+                    },
+                    "error": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "error_code",
+                    "error",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Gallery ID (bigint as string)"
+          }
+        ]
+      }
+    },
+    "/": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "API landing endpoint",
+        "description": "Returns service metadata.",
+        "operationId": "app_landing",
+        "responses": {
+          "200": {
+            "description": "Landing response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    },
+                    "environment": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Health check",
+        "description": "Returns service and dependency health snapshot.",
+        "operationId": "app_health",
+        "responses": {
+          "200": {
+            "description": "Healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unhealthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Degraded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

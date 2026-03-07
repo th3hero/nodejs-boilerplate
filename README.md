@@ -88,6 +88,10 @@ npm run dev
 | `npm run prisma:migrate` | Run database migrations |
 | `npm run prisma:studio` | Open Prisma Studio |
 | `npm run seed` | Seed database with roles, permissions, test users |
+| `npm run docs:generate` | Generate OpenAPI spec (`docs/openapi.json`) |
+| `npm run docs:validate` | Generate + validate OpenAPI spec |
+| `npm run docs:postman` | Generate Postman collection from OpenAPI |
+| `npm run docs:build` | Validate spec + generate Postman collection |
 
 ## Test Users (after seeding)
 
@@ -106,6 +110,21 @@ POST /v1/auth/*     # Authentication (OTP, password, 2FA, sessions)
 *    /v1/gallery/*  # File uploads (S3 presigned URLs)
 *    /v1/admin/*    # Admin (config, roles, permissions)
 ```
+
+## API Documentation
+
+- **Swagger UI:** `GET /docs`
+- **OpenAPI JSON:** `GET /docs/openapi.json`
+- **Source of truth:** module contracts in `src/app/http/modules/*/docs.contract.ts`
+
+### Documentation workflow
+
+1. Add/update route contract in the module contract file.
+2. Run `npm run docs:generate`.
+3. Validate contract with `npm run docs:validate`.
+4. Regenerate Postman collection using `npm run docs:postman`.
+
+This repo treats OpenAPI as the contract source. Postman collection is generated from that contract.
 
 ## Docker
 

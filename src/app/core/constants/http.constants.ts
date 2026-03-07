@@ -60,35 +60,3 @@ export const ERROR_CODES = {
     ALREADY_EXISTS: 'ALREADY_EXISTS',
     CONSTRAINT_VIOLATION: 'CONSTRAINT_VIOLATION'
 } as const;
-
-export const RATE_LIMITS = {
-    /** General API rate limit */
-    GENERAL: {
-        windowMs: 60_000,
-        max: 120
-    },
-
-    /** Login rate limit */
-    LOGIN: {
-        windowMs: 900_000, // 15 minutes
-        max: 20
-    },
-
-    /** OTP rate limit */
-    OTP: {
-        windowMs: 3_600_000, // 1 hour
-        max: 5
-    },
-
-    /** Password reset rate limit */
-    PASSWORD_RESET: {
-        windowMs: 300_000, // 5 minutes
-        max: 3
-    }
-} as const;
-
-export const PAGINATION = {
-    DEFAULT_PAGE: 1,
-    DEFAULT_LIMIT: 20,
-    MAX_LIMIT: 100
-} as const;

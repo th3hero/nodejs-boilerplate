@@ -8,7 +8,7 @@
  * - Role sessions set: auth:role-sessions:<roleSlug>
  */
 
-import { getRedisClient } from '@core/cache';
+import { getRedisClient, redisGetJson } from '@core/cache';
 import { createLogger } from '@services/logger.service';
 import type { Permissions } from '@core/constants';
 
@@ -70,24 +70,19 @@ const calculateTtl = (expiresAt: Date | string): number => {
 // ============================================================================
 
 export const getCachedSession = async (roleSlug: string, token: string): Promise<CachedSession | null> => {
-    try {
-        const redis = await getRedisClient();
-        const key = buildSessionKey(roleSlug, token);
-        const cached = await redis.get(key);
+    const key = buildSessionKey(roleSlug, token);
+    const cached = await redisGetJson<CachedSession>(key, logger, 'Session cache get failed', {
+        roleSlug,
+        token: token.substring(0, 8) + '...'
+    });
 
-        if (!cached) {
-            logger.debug('Session cache miss', { roleSlug, token: token.substring(0, 8) + '...' });
-            return null;
-        }
-
-        logger.debug('Session cache hit', { roleSlug, token: token.substring(0, 8) + '...' });
-        return JSON.parse(cached) as CachedSession;
-    } catch (error) {
-        logger.warn('Session cache get failed', {
-            error: error instanceof Error ? error.message : String(error)
-        });
+    if (!cached) {
+        logger.debug('Session cache miss', { roleSlug, token: token.substring(0, 8) + '...' });
         return null;
     }
+
+    logger.debug('Session cache hit', { roleSlug, token: token.substring(0, 8) + '...' });
+    return cached;
 };
 
 export const setCachedSession = async (roleSlug: string, token: string, session: CachedSession): Promise<void> => {

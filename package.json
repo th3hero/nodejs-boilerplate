@@ -22,7 +22,11 @@
     "prisma:migrate:deploy": "prisma migrate deploy --config prisma.config.ts",
     "prisma:studio": "prisma studio --config prisma.config.ts",
     "prisma:format": "prisma format --config prisma.config.ts",
-    "seed": "ts-node -r tsconfig-paths/register src/database/seed.ts"
+    "seed": "ts-node -r tsconfig-paths/register src/database/seed.ts",
+    "docs:generate": "ts-node -r tsconfig-paths/register src/docs/scripts/generate-openapi.ts",
+    "docs:validate": "npm run docs:generate && ts-node -r tsconfig-paths/register src/docs/scripts/validate-openapi.ts",
+    "docs:postman": "npm run docs:generate && openapi2postmanv2 -s docs/openapi.json -o docs/postman.collection.json -p",
+    "docs:build": "npm run docs:validate && npm run docs:postman"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.0.0",
@@ -33,30 +37,40 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
-    "express-rate-limit": "^8.1.0",
+    "express-rate-limit": "^8.2.2",
     "express-storage": "^3.0.0",
     "helmet": "^8.1.0",
     "ioredis": "^5.4.1",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.13.1",
     "rate-limit-redis": "^4.3.1",
+    "swagger-ui-express": "^5.0.1",
     "winston": "^3.18.3",
     "winston-daily-rotate-file": "^5.0.0"
+  },
+  "overrides": {
+    "hono": "^4.12.4",
+    "@hono/node-server": "^1.19.10",
+    "js-yaml": "^4.1.1",
+    "lodash": "^4.17.23"
   },
   "engines": {
     "node": ">=22.0.0"
   },
   "devDependencies": {
+    "@apidevtools/swagger-parser": "^12.1.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^24.6.1",
+    "@types/node": "^24.12.0",
     "@types/pg": "^8.11.6",
+    "@types/swagger-ui-express": "^4.1.8",
     "@typescript-eslint/eslint-plugin": "^8.45.0",
     "@typescript-eslint/parser": "^8.45.0",
     "eslint": "^9.36.0",
     "husky": "^9.1.7",
-    "prisma": "^7.0.0",
+    "openapi-to-postmanv2": "^6.0.0",
+    "prisma": "^7.4.2",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "tsc-alias": "^1.8.16",

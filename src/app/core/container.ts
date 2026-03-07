@@ -3,15 +3,13 @@
  */
 
 import prismaClient from '@core/database/prisma.client';
-import { createLogger, Logger } from '@services/logger.service';
 
 // ============================================================================
 // Container Types
 // ============================================================================
 
-export interface Container {
+interface Container {
     prisma: typeof prismaClient;
-    createLogger: (context: string) => Logger;
 }
 
 // ============================================================================
@@ -26,8 +24,7 @@ export const initContainer = (): Container => {
     }
 
     containerInstance = {
-        prisma: prismaClient,
-        createLogger
+        prisma: prismaClient
     };
 
     return containerInstance;

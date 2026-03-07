@@ -15,17 +15,6 @@ export const verifyRedisConnection = async (): Promise<HealthCheckResult> => {
 
     try {
         const client = await getRedisClient();
-        const needsConnect = client.status === 'wait' || client.status === 'close' || client.status === 'end';
-        if (needsConnect) {
-            await client.connect();
-        }
-
-        if (client.status !== 'ready') {
-            return {
-                status: 'degraded',
-                details: `Redis status ${client.status}`
-            };
-        }
 
         const startedAt = Date.now();
         const response = await client.ping();

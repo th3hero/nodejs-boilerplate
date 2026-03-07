@@ -56,14 +56,3 @@ export const decrypt = (encryptedContent: string): string => {
     );
     return decrypted.toString('utf8');
 };
-
-// ============================================================================
-// Service Class (for DI compatibility)
-// ============================================================================
-
-export class EncryptionService {
-    encrypt = encrypt;
-    decrypt = decrypt;
-}
-
-export default new EncryptionService();
